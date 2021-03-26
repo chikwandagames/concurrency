@@ -5,39 +5,32 @@ import (
 	"sync"
 )
 
-// To create a join point to allow a forked goroutine to join the
-// main goroutine after the forked goroutine has completed execution.
-// We use sync WaitGroup to block the main goroutine
+//TODO: run the program and check that variable i
+// was pinned for access from goroutine even after
+// enclosing function returns.
 
-// WaitGroup is like a concurrent counter
-// 1. Calling Add() increment the count by the int passed to it
-// 2. Calling Done() decrement the count by one
-// 3. Calling Wait() waits until the count is zero
+// The reason why the reference to the i variable is kept by the go routine
+// is because the runtime is clever enough to see that the reference to
+// the variable i is still being held by the goroutine, so it moves it
+// from the stack to the heap so that the goroutine still has access
+// to the variable even after the enclosing outer function returns
 
 func main() {
-	//TODO: modify the program
-	// to print the value as 1
-	// deterministically.
-
-	var data int
-
 	var wg sync.WaitGroup
 
-	// 1. Add the number of goroutines to be created
-	wg.Add(1)
+	incr := func(wg *sync.WaitGroup) {
+		var i int
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			i++
+			fmt.Printf("value of i: %v\n", i)
+		}()
+		fmt.Printf("return from function %v \n", i)
+		return
+	}
 
-	go func() {
-		// 2. call Done() inside the goroutine closure to indicate that teh
-		//    goroutine is exitting, use defer to make sure Done() is called
-		//    on all exit points of the function.
-		//    Done() will be executed at the end of the goroutine
-		defer wg.Done()
-		data++
-	}()
-
-	// Wait will block the main goroutine until all the forked goroutines
-	// have exited
+	incr(&wg)
 	wg.Wait()
-	fmt.Printf("the value of data is %v\n", data)
-	fmt.Println("Done..")
+	fmt.Println("done..")
 }

@@ -24,7 +24,9 @@ func main() {
 			// If theres an error we continue to get the next client connection
 			continue
 		}
-		handleConn(conn)
+		// To serve multiple clients, simply turn the call to handleConn in goroutine
+		// so that we create a seperate goroutine to handle each client connection
+		go handleConn(conn)
 	}
 
 }

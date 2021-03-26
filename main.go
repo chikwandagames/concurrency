@@ -5,32 +5,35 @@ import (
 	"sync"
 )
 
-//TODO: run the program and check that variable i
-// was pinned for access from goroutine even after
-// enclosing function returns.
+// Goroutines operate on the current values of a variable at the
+// time of execution
+// If you want a goroutine operate on a specific value, then we need
+// to pass that as input to the goroutine
 
-// The reason why the reference to the i variable is kept by the go routine
-// is because the runtime is clever enough to see that the reference to
-// the variable i is still being held by the goroutine, so it moves it
-// from the stack to the heap so that the goroutine still has access
-// to the variable even after the enclosing outer function returns
+// Basically, if you don't pass i as an argument, the for loop will run and
+// whatever the current value of the i is at the time of spinniing up
+// a new goroutine, is what the goroutine will increment
 
 func main() {
 	var wg sync.WaitGroup
 
-	incr := func(wg *sync.WaitGroup) {
-		var i int
+	for i := 1; i <= 10; i++ {
 		wg.Add(1)
-		go func() {
+		go func(i int) {
 			defer wg.Done()
-			i++
-			fmt.Printf("value of i: %v\n", i)
-		}()
-		fmt.Printf("return from function %v \n", i)
-		return
+			fmt.Println(i)
+		}(i)
 	}
-
-	incr(&wg)
 	wg.Wait()
-	fmt.Println("done..")
 }
+
+// what is the output
+// TODO: fix the issue.
+
+// for i := 1; i <= 3; i++ {
+// 	wg.Add(1)
+// 	go func() {
+// 		defer wg.Done()
+// 		fmt.Println(i)
+// 	}()
+// }

@@ -2,22 +2,50 @@ package main
 
 import "fmt"
 
+// Channel direction
+// When using channels as function params, you can specify
+// whether a channel is meant to only send or receive values
+// this specification increases the type-safety of a program
+
+func foo(in <-chan string, out chan<- string) {}
+
+// Above
+// "in"is a receive only channel
+// "out"is a send only channel
+// foo can only use "in" only to receive values
+// foo can only use "out" only to send values
+
 func main() {
-	// All we need to do is add a capacity to make this a buffered channel
-	// 6 is the capacity, which is the number of elements we want
-	// to send without blocking, because we have 6 iterations in the for loop
-	ch := make(chan int, 6)
+	// create ch1 and ch2
+	ch1 := make(chan string)
+	ch2 := make(chan string)
 
-	go func() {
-		defer close(ch)
+	// spine goroutine genMsg and rMsg
+	go addMsg(ch1)
 
-		for i := 0; i < 6; i++ {
-			fmt.Printf("Sending: %d\n", i)
-			ch <- i
-		}
-	}()
+	// Alternatively
+	// go func(ch chan<- string) {
+	// 	ch <- "another message"
+	// }(ch1)
 
-	for v := range ch {
-		fmt.Printf("Received: %v\n", v)
-	}
+	go passOnMsg(ch1, ch2)
+
+	// recv message on ch2
+	v := <-ch2
+	fmt.Println(v)
+}
+
+// Takes a send only channel
+func addMsg(ch chan<- string) {
+	// send message on ch1
+	ch <- "message from sendMsg()"
+}
+
+// Takes a receive only and send only channel
+func passOnMsg(ch1 <-chan string, ch2 chan<- string) {
+	// recv message on ch1
+	m := <-ch1
+	// send it on ch2
+	ch2 <- m
+
 }

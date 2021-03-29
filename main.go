@@ -33,6 +33,14 @@ func main() {
 	// recv message on ch2
 	v := <-ch2
 	fmt.Println(v)
+
+	// The goroutine that creates a channel, can write to that channel
+	// and is also responsible for closing the channel and is the owner
+	// of the channel
+	// A goroutine that utiliese a channel has read only priviledges
+	// to a channel
+	defer close(ch1)
+	defer close(ch2)
 }
 
 // Takes a send only channel

@@ -3,7 +3,10 @@ package main
 import "fmt"
 
 func main() {
-	ch := make(chan int)
+	// All we need to do is add a capacity to make this a buffered channel
+	// 6 is the capacity, which is the number of elements we want
+	// to send without blocking, because we have 6 iterations in the for loop
+	ch := make(chan int, 6)
 
 	go func() {
 		defer close(ch)

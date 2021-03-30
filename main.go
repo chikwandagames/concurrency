@@ -20,29 +20,25 @@ import (
 
 // Empty select will block forever  "select{}"
 // Select on a nil channel will block forever "var ch chan string"
-func main() {
-	ch1 := make(chan string)
-	ch2 := make(chan string)
 
-	go func() {
-		// time.Sleep(1 * time.Second)
-		time.Sleep(3 * time.Second)
-		ch1 <- "one"
-	}()
+func main() {
+	ch := make(chan string, 1)
 
 	go func() {
 		time.Sleep(2 * time.Second)
-		ch2 <- "two"
+		ch <- "one"
 	}()
 
-	// TODO: multiplex recv on channel - ch1, ch2
-	for i := 0; i < 2; i++ {
-		select {
-		case msg1 := <-ch1:
-			fmt.Println(msg1)
-		case msg2 := <-ch2:
-			fmt.Println(msg2)
-		}
+	// TODO: implement timeout for recv on channel ch
+
+	select {
+
+	case m := <-ch:
+		fmt.Println(m)
+
+	case <-time.After(3 * time.Second):
+	case <-time.After(1 * time.Second):
+		fmt.Println("1 second timeout")
 	}
 
 }

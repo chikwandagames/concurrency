@@ -42,20 +42,23 @@ func main() {
 
 	// TODO: fix the issue for consistent output.
 
-	wg.Add(100)
-	for i := 0; i < 100; i++ {
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
 		go func() {
 			defer wg.Done()
 			deposit(1)
+			fmt.Printf("balance after deposite: %v \n", balance)
 		}()
 	}
 
-	wg.Add(100)
-	for i := 0; i < 100; i++ {
+	// fmt.Println("random")
+
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
 		go func() {
 			defer wg.Done()
 			withdrawal(1)
-			// fmt.Println(balance)
+			fmt.Printf("balance after withdrawal: %v \n", balance)
 		}()
 	}
 

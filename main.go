@@ -4,64 +4,39 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 )
 
-// The goroutines in the for loops, 100 for withdrawals and 100 for deposites
-// are running concurrently,
-// the balance variable is shared between withdrals and deposits
-// this can cause undetermistic results due to data race condition
+// In this case we have multiple goroutines accessing a varible counter
+// that are running in parallel
+// This causes a data race, which will corrucpt the data
+// a simple counter++ is not concurrent safe
+
+// Atomic
+// To increment the counter in a concurrent safe way, we can use atomic
+// Atomic is a lockless operation
+// The Atomic Add function can be called by multiple goroutines concurrently
+// and access to the memory will be concurrent safe
 
 func main() {
-
-	// Tell the runtime to use 4 cores to run our goroutines
 	runtime.GOMAXPROCS(4)
 
-	// Shared variable
-	var balance int
+	var counter uint64
 	var wg sync.WaitGroup
 
-	// Here we use Mutex to gaurd access to the shared variable
-	// sync.Mutex, provides exclusive access to a shared resource using
-	var mu sync.Mutex
+	// TODO: implement concurrency safe counter
 
-	deposit := func(amount int) {
-		mu.Lock()
-		balance += amount
-		mu.Unlock()
-	}
-
-	withdrawal := func(amount int) {
-		mu.Lock()
-		balance -= amount
-		defer mu.Unlock()
-	}
-
-	// make 100 deposits of $1
-	// and 100 withdrawal of $1 concurrently.
-	// run the program and check result.
-
-	// TODO: fix the issue for consistent output.
-
-	wg.Add(10)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			deposit(1)
-			fmt.Printf("balance after deposite: %v \n", balance)
+			for c := 0; c < 10; c++ {
+				// counter++ // This would produce random results
+				atomic.AddUint64(&counter, 1)
+				// Use atomic to imcreament counter by 1
+			}
 		}()
 	}
-
-	// fmt.Println("random")
-
-	wg.Add(10)
-	for i := 0; i < 10; i++ {
-		go func() {
-			defer wg.Done()
-			withdrawal(1)
-			fmt.Printf("balance after withdrawal: %v \n", balance)
-		}()
-	}
-
 	wg.Wait()
-	fmt.Println(balance)
+	fmt.Println("counter: ", counter)
 }

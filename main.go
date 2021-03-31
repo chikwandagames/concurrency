@@ -2,41 +2,54 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"sync"
-	"sync/atomic"
 )
 
-// In this case we have multiple goroutines accessing a varible counter
-// that are running in parallel
-// This causes a data race, which will corrucpt the data
-// a simple counter++ is not concurrent safe
+// Sync.Cond "conditional variables"
+// A conditional variable is a container of goroutines that are
+// waiting for a certian condition
+// Conditional vars are used to synchronise execution of goroutines
 
-// Atomic
-// To increment the counter in a concurrent safe way, we can use atomic
-// Atomic is a lockless operation
-// The Atomic Add function can be called by multiple goroutines concurrently
-// and access to the memory will be concurrent safe
+// Wait() suspends the execution of a goroutine
+// Signal() wakes up one goroutine waiting on a condition
+// Broadcast() wakes up all goroutines waition on a condition
+
+var sharedRsc = make(map[string]interface{})
 
 func main() {
-	runtime.GOMAXPROCS(4)
-
-	var counter uint64
 	var wg sync.WaitGroup
 
-	// TODO: implement concurrency safe counter
+	mu := sync.Mutex{}
+	// Conditional variable
+	cnd := sync.NewCond(&mu)
 
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for c := 0; c < 10; c++ {
-				// counter++ // This would produce random results
-				atomic.AddUint64(&counter, 1)
-				// Use atomic to imcreament counter by 1
-			}
-		}()
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		//TODO: suspend goroutine until sharedRsc is populated.
+
+		// Before accessing the shared resource, we lock
+		cnd.L.Lock()
+		// While the sharedRsc is empty, suspend the goroutine
+		for len(sharedRsc) == 0 {
+			// Wait(), releases the lock and suspend the goroutine
+			cnd.Wait()
+			// fmt.Println("nothing here")
+		}
+
+		fmt.Println(sharedRsc["rsc1"])
+		// Release the lock, after processing
+		cnd.L.Unlock()
+	}()
+
+	cnd.L.Lock()
+	// writes changes to sharedRsc
+	sharedRsc["rsc1"] = "foo"
+	// Send a signal to the goroutine, that the codition has been met
+	cnd.Signal()
+	// Then release the lock
+	cnd.L.Unlock()
+
 	wg.Wait()
-	fmt.Println("counter: ", counter)
 }

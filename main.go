@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+// Broadcast wakes up all goroutines waiting on a condition
+
 // Sync.Cond "conditional variables"
 // A conditional variable is a container of goroutines that are
 // waiting for a certian condition
@@ -13,6 +15,8 @@ import (
 // Wait() suspends the execution of a goroutine
 // Signal() wakes up one goroutine waiting on a condition
 // Broadcast() wakes up all goroutines waition on a condition
+
+// Here we have 2 goroutines waiting on different conditions
 
 var sharedRsc = make(map[string]interface{})
 
@@ -28,27 +32,41 @@ func main() {
 		defer wg.Done()
 
 		//TODO: suspend goroutine until sharedRsc is populated.
-
-		// Before accessing the shared resource, we lock
+		// Before accessing the shared resource, lock
 		cnd.L.Lock()
-		// While the sharedRsc is empty, suspend the goroutine
-		for len(sharedRsc) == 0 {
-			// Wait(), releases the lock and suspend the goroutine
+		for len(sharedRsc) < 1 {
+			// If condition not met
 			cnd.Wait()
-			// fmt.Println("nothing here")
 		}
 
 		fmt.Println(sharedRsc["rsc1"])
-		// Release the lock, after processing
+		// After processing release the lock
 		cnd.L.Unlock()
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		//TODO: suspend goroutine until sharedRsc is populated.
+		cnd.L.Lock()
+		for len(sharedRsc) < 2 {
+			cnd.Wait()
+		}
+
+		fmt.Println(sharedRsc["rsc2"])
+		cnd.L.Unlock()
+	}()
+
+	// In the main goroutine Lock, (modify) populate the shared resource,
+	// wake the other 2 goroutines using Broadcast(), then release the lock
 	cnd.L.Lock()
 	// writes changes to sharedRsc
 	sharedRsc["rsc1"] = "foo"
-	// Send a signal to the goroutine, that the codition has been met
-	cnd.Signal()
-	// Then release the lock
+	sharedRsc["rsc2"] = "bar"
+	// Send a broadcast signal to all goroutines the condition they are waiting on
+	// has been met
+	cnd.Broadcast()
 	cnd.L.Unlock()
 
 	wg.Wait()
